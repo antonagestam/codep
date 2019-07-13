@@ -50,4 +50,3 @@ if __name__ == '__main__':
 - [ ] Make pytest run example in readme?
 - [ ] Test suite
 - [ ] CI
-- [ ] Get rid of `Partial.Result`, only `state` is needed

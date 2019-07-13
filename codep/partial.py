@@ -6,10 +6,7 @@ from typing import cast
 from typing import FrozenSet
 from typing import Generic
 from typing import Iterable
-from typing import NamedTuple
-from typing import Optional
 from typing import Sequence
-from typing import Set
 from typing import Type
 from typing import TypeVar
 
@@ -20,11 +17,6 @@ R = TypeVar("R", bound=Any)
 
 
 class Partial(abc.ABC, Generic[R]):
-    class Result(NamedTuple):
-        of: Optional[Type[Partial]]
-        previous: Optional[Partial.Result]  # type: ignore
-        state: immutables.Map
-
     depends: Sequence[Type[Partial]] = ()
 
     def __init__(self):
@@ -40,10 +32,10 @@ class Partial(abc.ABC, Generic[R]):
         ...
 
     @classmethod
-    def apply(cls, result: Partial.Result) -> Partial.Result:
+    def apply(cls, state: immutables.Map) -> immutables.Map:
         # Make sure all partials that this one depends on has been applied in
         # the given result.
-        missing_dependencies = cls.missing(result)
+        missing_dependencies = cls.missing(state)
         if len(missing_dependencies) > 0:
             raise RuntimeError(
                 f"All required partials have not been applied to the previous "
@@ -51,29 +43,20 @@ class Partial(abc.ABC, Generic[R]):
             )
 
         print(f"Applying partial: {cls.__name__}")
-        return Partial.Result(
-            of=cls, previous=result, state=result.state.set(cls, cls.run(result.state))
-        )
+        return state.set(cls, cls.run(state))
 
     @staticmethod
-    def applied(result: Partial.Result) -> FrozenSet[Type[Partial]]:
-        applied_set: Set[Type[Partial]] = set()
-        if result.of is not None:
-            applied_set.add(result.of)
-        while result.previous is not None:
-            if result.of is not None:
-                applied_set.add(result.previous.of)
-            result = result.previous
-        return frozenset(applied_set)
+    def applied(state: immutables.Map) -> FrozenSet[Type[Partial]]:
+        return frozenset(state.keys())
 
     @classmethod
-    def missing(cls, result: Partial.Result) -> FrozenSet[Type[Partial]]:
-        return frozenset(set(cls.depends) - cls.applied(result))
+    def missing(cls, state: immutables.Map) -> FrozenSet[Type[Partial]]:
+        return frozenset(set(cls.depends) - cls.applied(state))
 
     @classmethod
-    def runnable_dependencies(cls, result: Partial.Result) -> Iterable[Type[Partial]]:
-        missing = cls.missing(result)
-        if len(missing) == 0 and cls not in cls.applied(result):
+    def runnable_dependencies(cls, state: immutables.Map) -> Iterable[Type[Partial]]:
+        missing = cls.missing(state)
+        if len(missing) == 0 and cls not in cls.applied(state):
             yield cls
         for dep in missing:
-            yield from dep.runnable_dependencies(result)
+            yield from dep.runnable_dependencies(state)
