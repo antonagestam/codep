@@ -1,4 +1,4 @@
-from .partial import make_partial
+from .decorators import make_partial
 from .partial import Partial
 from .runner import run
 

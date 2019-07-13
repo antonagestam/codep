@@ -3,58 +3,49 @@ from __future__ import annotations
 import datetime
 
 import immutables
+import pytz
 import requests
 
 import codep
 
 
-class GetCurrentTime(codep.Partial):
+class GetCurrentTime(codep.Partial[datetime.datetime]):
     @classmethod
-    def run(cls, state: immutables.Map) -> immutables.Map:
+    def run(cls, state: immutables.Map) -> datetime.datetime:
         response = requests.get("http://worldtimeapi.org/api/ip")
         assert response.status_code == 200
         payload = response.json()
-        return state.set(
-            "current_time", datetime.datetime.fromisoformat(payload["utc_datetime"])
-        )
+        return datetime.datetime.fromisoformat(payload["utc_datetime"])
 
 
-class GetDayOfYear(codep.Partial):
+class GetDayOfYear(codep.Partial[int]):
     @classmethod
-    def run(cls, state: immutables.Map) -> immutables.Map:
+    def run(cls, state: immutables.Map) -> int:
         response = requests.get("http://worldtimeapi.org/api/ip")
         assert response.status_code == 200
         payload = response.json()
-        return state.set("day_of_year", payload["day_of_year"])
+        return int(payload["day_of_year"])
 
 
-class AddOneHour(codep.Partial):
+class AddOneHour(codep.Partial[datetime.datetime]):
     depends = (GetCurrentTime,)
 
     @classmethod
-    def run(cls, state: immutables.Map) -> immutables.Map:
-        return state.set(
-            "current_time", state["current_time"] + datetime.timedelta(hours=1)
-        )
+    def run(cls, state: immutables.Map) -> datetime.datetime:
+        return GetCurrentTime.value(state) + datetime.timedelta(hours=1)
 
 
-class LocalTime(codep.Partial):
+class LocalTime(codep.Partial[datetime.datetime]):
     depends = (AddOneHour,)
 
     @classmethod
-    def run(cls, state: immutables.Map) -> immutables.Map:
-        import pytz
-
-        t = state["current_time"]
-        print(t.astimezone(pytz.timezone("Europe/Stockholm")))
-        return state
+    def run(cls, state: immutables.Map) -> datetime.datetime:
+        return AddOneHour.value(state).astimezone(pytz.timezone("Europe/Stockholm"))
 
 
-class UTCTime(codep.Partial):
+class UTCTime(codep.Partial[datetime.datetime]):
     depends = (AddOneHour, GetDayOfYear)
 
     @classmethod
-    def run(cls, state: immutables.Map) -> immutables.Map:
-        t = state["current_time"]
-        print(t.astimezone(datetime.timezone.utc))
-        return state
+    def run(cls, state: immutables.Map) -> datetime.datetime:
+        return AddOneHour.value(state).astimezone(datetime.timezone.utc)

@@ -16,29 +16,27 @@ import immutables
 
 
 @codep.make_partial()
-def acquire_radius(state: immutables.Map) -> immutables.Map:
-    return state.set("radius", 6_371)
+def acquire_radius(_state: immutables.Map) -> int:
+    return 6_371
 
 
 @codep.make_partial()
-def calculate_pi(state: immutables.Map) -> immutables.Map:
-    return state.set("pi", 3.14)
+def calculate_pi(_state: immutables.Map) -> float:
+    return 3.14
 
 
 @codep.make_partial(depends=(calculate_pi, acquire_radius))
-def calculate_circumference(state: immutables.Map) -> immutables.Map:
-    return state.set("circumference", 2 * state["pi"] * state["radius"])
+def calculate_circumference(state: immutables.Map) -> float:
+    return 2 * calculate_pi.value(state) * acquire_radius.value(state)
 
 
 @codep.make_partial(depends=(acquire_radius, calculate_pi))
-def calculate_volume(state: immutables.Map) -> immutables.Map:
-    return state.set("volume", (4/3) * state["pi"] * state["radius"] ** 3)
+def calculate_volume(state: immutables.Map) -> float:
+    return (4/3) * calculate_pi.value(state) * acquire_radius.value(state) ** 3
     
 
 if __name__ == '__main__':
-    r1, r2 = codep.run(calculate_circumference, calculate_volume)
-    circumference = r1.state["circumference"]
-    volume = r2.state["volume"]
+    circumference, volume = codep.run(calculate_circumference, calculate_volume)
     print(
         f"The circumference of earth is {circumference} km and its volume is " 
         f"{volume} km^3"
@@ -47,8 +45,9 @@ if __name__ == '__main__':
 
 ## Todo
 
-- [ ] Make Partial a Generic, and make tasks only able to return a value.
-      `Partial.apply` should instead assign the result to the state which
-      becomes a mapping `Type[Partial] -> Any`.
 - [ ] Remove `print()`, use logging
 - [ ] Concurrent task execution
+- [ ] Make pytest run example in readme?
+- [ ] Test suite
+- [ ] CI
+- [ ] Get rid of `Partial.Result`, only `state` is needed
