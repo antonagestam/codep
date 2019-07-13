@@ -1,0 +1,19 @@
+# Development dependencies (type checking, formatting, linting, et.c)
+mypy
+flake8
+flake8-bugbear
+flake8-pep3101
+flake8-builtins
+flake8-broken-line
+flake8-eradicate
+flake8-comprehensions
+pep8-naming
+flake8-black
+black
+sorti
+
+# Test dependendencies
+pytest
+
+# Application dependencies
+immutables
