@@ -8,7 +8,8 @@ required by multiple dependants are only run once and reuses the results.
 
 In the example below the `calculate_circumference` and `calculate_volume` tasks
 both depend on the `acquire_radius` and `calculate_pi` tasks. The runner will
-infer that from the dependency graph and run them before.
+infer that from the dependency graph and run them in parallel before their
+dependants, since their independent of each other.
 
 ```python
 import codep
@@ -16,22 +17,22 @@ import immutables
 
 
 @codep.make_partial()
-def acquire_radius(_state: immutables.Map) -> int:
+async def acquire_radius(_state: immutables.Map) -> int:
     return 6_371
 
 
 @codep.make_partial()
-def calculate_pi(_state: immutables.Map) -> float:
+async def calculate_pi(_state: immutables.Map) -> float:
     return 3.14
 
 
 @codep.make_partial(depends=(calculate_pi, acquire_radius))
-def calculate_circumference(state: immutables.Map) -> float:
+async def calculate_circumference(state: immutables.Map) -> float:
     return 2 * calculate_pi.value(state) * acquire_radius.value(state)
 
 
 @codep.make_partial(depends=(acquire_radius, calculate_pi))
-def calculate_volume(state: immutables.Map) -> float:
+async def calculate_volume(state: immutables.Map) -> float:
     return (4/3) * calculate_pi.value(state) * acquire_radius.value(state) ** 3
     
 
@@ -46,7 +47,6 @@ if __name__ == '__main__':
 ## Todo
 
 - [ ] Remove `print()`, use logging
-- [ ] Concurrent task execution
 - [ ] Make pytest run example in readme?
 - [ ] Test suite
 - [ ] CI

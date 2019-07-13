@@ -1,4 +1,5 @@
 from typing import Any
+from typing import Awaitable
 from typing import Callable
 from typing import Sequence
 from typing import Type
@@ -14,19 +15,19 @@ T = TypeVar("T", bound=Any)
 
 def make_partial(
     depends: Sequence[Type[Partial]] = ()
-) -> Callable[[Callable[[immutables.Map], T]], Type[Partial[T]]]:
+) -> Callable[[Callable[[immutables.Map], Awaitable[T]]], Type[Partial[T]]]:
     # We assign a new new name so that we can assign to the depends class
     # property of FunctionalPartial in the decorator, while maintaining the same
     # name in the API.
     _depends_on = depends
 
-    def decorator(fn: Callable[[immutables.Map], T]) -> Type[Partial[T]]:
+    def decorator(fn: Callable[[immutables.Map], Awaitable[T]]) -> Type[Partial[T]]:
         class FunctionalPartial(Partial[T]):
             depends = _depends_on
 
             @classmethod
-            def run(cls, state: immutables.Map) -> T:
-                return fn(state)
+            async def run(cls, state: immutables.Map) -> T:
+                return await fn(state)
 
         FunctionalPartial.__name__ = fn.__name__
         return FunctionalPartial

@@ -11,6 +11,7 @@ from typing import Type
 from typing import TypeVar
 
 import immutables
+from typing_extensions import final
 
 
 R = TypeVar("R", bound=Any)
@@ -19,6 +20,7 @@ R = TypeVar("R", bound=Any)
 class Partial(abc.ABC, Generic[R]):
     depends: Sequence[Type[Partial]] = ()
 
+    @final
     def __init__(self):
         raise RuntimeError("Partials cannot be instantiated")
 
@@ -28,22 +30,8 @@ class Partial(abc.ABC, Generic[R]):
 
     @classmethod
     @abc.abstractmethod
-    def run(cls, state: immutables.Map) -> R:
+    async def run(cls, state: immutables.Map) -> R:
         ...
-
-    @classmethod
-    def apply(cls, state: immutables.Map) -> immutables.Map:
-        # Make sure all partials that this one depends on has been applied in
-        # the given result.
-        missing_dependencies = cls.missing(state)
-        if len(missing_dependencies) > 0:
-            raise RuntimeError(
-                f"All required partials have not been applied to the previous "
-                f"result. Missing dependencies: {missing_dependencies}."
-            )
-
-        print(f"Applying partial: {cls.__name__}")
-        return state.set(cls, cls.run(state))
 
     @staticmethod
     def applied(state: immutables.Map) -> FrozenSet[Type[Partial]]:
