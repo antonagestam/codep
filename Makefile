@@ -1,12 +1,12 @@
 format:
-	sorti codep
-	black codep
+	sorti codep examples
+	black codep examples
 
 lint:
-	sorti --check codep
-	black --check codep
+	sorti --check codep examples
+	black --check codep examples
 	flake8
-	mypy codep
+	mypy codep examples
 
 distribute:
 	pip install --upgrade wheel twine
